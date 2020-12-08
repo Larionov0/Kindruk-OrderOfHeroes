@@ -26,6 +26,7 @@ class Hero:
 
     alive = True
     did_action = False
+    can_do_move = True
 
     def __init__(self, team_number):
         self.team_number = team_number
@@ -74,6 +75,7 @@ class Hero:
 
     def before_move(self):
         self.did_action = False
+        self.can_do_move = True
         for effect in self.effects:
             effect.before_move_tick()
 
@@ -83,39 +85,42 @@ class Hero:
 
     def make_move_menu(self, my_team, enemies_team):
         self.before_move()
-        while True:
-            text = f'\n\n--= Хід героя {self.colored_name()} =--\n' \
-                   f'a - звичайна атака\n' \
-                   f'1 - використати 1 вміння\n' \
-                   f'2 - використати 2 вміння\n' \
-                   f'- - закінчити хід\n' \
-                   f'i - подивитися інформацію про героїв\n' \
-                   f'ваш вибір: '
-            choice = input(text)
-            if choice == 'a':
-                self.normal_attack_menu(enemies_team)
-            elif choice == '1':
-                if self.did_action:
-                    print("Ви вже використали дію")
-                else:
-                    print(f"--= {self.skill_1_name} =--")
-                    print(self.skill_1_description)
-                    choice = input("Кастуєте скіл? (y/n): ")
-                    if choice == 'y':
-                        self.cast_1_skill(my_team, enemies_team)
-            elif choice == '2':
-                if self.did_action:
-                    print("Ви вже використали дію")
-                else:
-                    print(f"--= {self.skill_2_name} =--")
-                    print(self.skill_2_description)
-                    choice = input("Кастуєте скіл? (y/n): ")
-                    if choice == 'y':
-                        self.cast_2_skill(my_team, enemies_team)
-            elif choice == '-':
-                break
-            elif choice == 'i':
-                self.print_heroes_info(my_team, enemies_team)
+        if self.can_do_move:
+            while True:
+                text = f'\n\n--= Хід героя {self.colored_name()} =--\n' \
+                       f'a - звичайна атака\n' \
+                       f'1 - використати 1 вміння\n' \
+                       f'2 - використати 2 вміння\n' \
+                       f'- - закінчити хід\n' \
+                       f'i - подивитися інформацію про героїв\n' \
+                       f'ваш вибір: '
+                choice = input(text)
+                if choice == 'a':
+                    self.normal_attack_menu(enemies_team)
+                elif choice == '1':
+                    if self.did_action:
+                        print("Ви вже використали дію")
+                    else:
+                        print(f"--= {self.skill_1_name} =--")
+                        print(self.skill_1_description)
+                        choice = input("Кастуєте скіл? (y/n): ")
+                        if choice == 'y':
+                            self.cast_1_skill(my_team, enemies_team)
+                elif choice == '2':
+                    if self.did_action:
+                        print("Ви вже використали дію")
+                    else:
+                        print(f"--= {self.skill_2_name} =--")
+                        print(self.skill_2_description)
+                        choice = input("Кастуєте скіл? (y/n): ")
+                        if choice == 'y':
+                            self.cast_2_skill(my_team, enemies_team)
+                elif choice == '-':
+                    break
+                elif choice == 'i':
+                    self.print_heroes_info(my_team, enemies_team)
+        else:
+            print(f"{self.name} пропускає хід!")
         self.after_move()
 
     def print_heroes_info(self, my_team, enemies_team):
@@ -158,8 +163,14 @@ class Hero:
             return None
 
     def __str__(self):
+        effects_text = ''
+        for effect in self.effects:
+            effects_text += f'- {effect}\n'
+
         return f"{self.colored_name()} ({self.hp}/{self.max_hp} hp)\n" \
-               f"attack: {self.attack} | armor: {self.armor} | magic: {self.magic}"
+               f"attack: {self.attack} | armor: {self.armor} | magic: {self.magic}\n" \
+               f"Ефекти:\n" \
+               f"{effects_text}"
 
 
 class Archer(Hero):
@@ -180,7 +191,7 @@ class Archer(Hero):
 
     def cast_1_skill(self, my_team, enemies_team):
         for enemy in enemies_team:
-            enemy.effects.append(effects.Poisoning(enemy, 3, 2))
+            enemy.effects.append(effects.Bleeding(enemy, 2))
 
     def cast_2_skill(self, my_team, enemies_team):
         print(f"{colorama.Fore.GREEN}Лучник запускає град стріл у ворогів{colorama.Fore.RESET}")
@@ -207,9 +218,14 @@ class Slime(Hero):
         if lack > 50:
             self.regen_hp(1)
 
+    # def cast_1_skill(self, my_team, enemies_team):
+    #     self.regen_hp(my_round((self.max_hp - self.hp) / 2))
+    #     self.did_action = True
+
     def cast_1_skill(self, my_team, enemies_team):
-        self.regen_hp(my_round((self.max_hp - self.hp) / 2))
-        self.did_action = True
+        self.loose_hp(10)
+        self.armor += 1
+        print("Армори + 1")
 
     def cast_2_skill(self, my_team, enemies_team):
         mini_slime = MiniSlime(self.team_number)
@@ -301,9 +317,30 @@ class Doctor(Hero):
         self.did_action = True
 
 
+class Boxer(Hero):
+    name = 'Boxer'
+    hp = max_hp = 25
+    attack = 3
+    armor = 1
+
+    skill_1_name = "Нокаут"
+    skill_1_description = 'Боксер вибирає ціль і оглушує її на 1 хід,\n' \
+                          'а також наносить їй 5 урона'
+
+    def cast_1_skill(self, my_team, enemies_team):
+        target_hero = self.choose_hero_from_list(enemies_team)
+        if target_hero is None:
+            return
+
+        target_hero.get_damage(5)
+        target_hero.effects.append(
+            effects.Stun(target_hero, 1)
+        )
+
+
 def main():
     team1 = [Assassin(1), Doctor(1)]
-    team2 = [Archer(2), Slime(2)]
+    team2 = [Archer(2), Slime(2), Boxer(2)]
 
     round_ = 1
     while True:
