@@ -326,6 +326,8 @@ class Boxer(Hero):
     skill_1_name = "Нокаут"
     skill_1_description = 'Боксер вибирає ціль і оглушує її на 1 хід,\n' \
                           'а також наносить їй 5 урона'
+    skill_2_name = 'Вогнений апперкот'
+    skill_2_description = ''
 
     def cast_1_skill(self, my_team, enemies_team):
         target_hero = self.choose_hero_from_list(enemies_team)
@@ -335,6 +337,15 @@ class Boxer(Hero):
         target_hero.get_damage(5)
         target_hero.effects.append(
             effects.Stun(target_hero, 1)
+        )
+
+    def cast_2_skill(self, my_team, enemies_team):
+        target_hero = self.choose_hero_from_list(enemies_team)
+        if target_hero is None:
+            return
+        target_hero.get_damage(3)
+        target_hero.effects.append(
+            effects.Fire(target_hero, 3)
         )
 
 

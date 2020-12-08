@@ -1,4 +1,5 @@
 import colorama
+
 colorama.init()
 
 
@@ -76,3 +77,35 @@ class Stun(Effect):
     def before_move_tick(self):
         self.hero.can_do_move = False
         self.decrease_duration()
+
+
+class Regeneration(Effect):
+    name = "Регенерація"
+
+    def __init__(self, hero, duration, hp):
+        super().__init__(hero, duration)
+        self.hp = hp
+
+    def before_move_tick(self):
+        self.hero.regen_hp(self.hp)
+        self.decrease_duration()
+
+    def __str__(self):
+        return f"{colorama.Fore.GREEN}{self.name}{colorama.Fore.RESET} ({self.duration} ходів {self.hp} hp)"
+
+
+class Fire(Effect):
+    name = 'Підпалення'
+
+    def __init__(self, hero, duration):
+        super().__init__(hero, duration)
+        self.damage = 1
+
+    def after_move_tick(self):
+        print(f"{colorama.Fore.GREEN}Підпалення в ділі{colorama.Fore.RESET}")
+        self.hero.loose_hp(self.damage)
+        self.decrease_duration()
+        self.damage += 1
+
+    def __str__(self):
+        return f"{colorama.Fore.GREEN}{self.name}{colorama.Fore.RESET} ({self.duration} ходів {self.damage} урона)"
